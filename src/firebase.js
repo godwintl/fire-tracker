@@ -16,8 +16,15 @@ const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
 const db = getDatabase(app)
 
-export function signInWithGoogle() {
-  return signInWithPopup(auth, new GoogleAuthProvider())
+const ALLOWED_EMAIL = 'godwintl@gmail.com'
+
+export async function signInWithGoogle() {
+  const result = await signInWithPopup(auth, new GoogleAuthProvider())
+  if (result.user.email !== ALLOWED_EMAIL) {
+    await signOut(auth)
+    throw new Error('Unauthorized. This dashboard is private.')
+  }
+  return result
 }
 
 export function signOutUser() {

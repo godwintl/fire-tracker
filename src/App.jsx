@@ -43,6 +43,7 @@ function computeNetWorth(accounts) {
 function App() {
   const [user, setUser] = useState(undefined)
   const [inputs, setInputs] = useState(DEFAULT_INPUTS)
+  const [authError, setAuthError] = useState(null)
   const isRemoteUpdate = useRef(false)
 
   useEffect(() => onAuthChange(setUser), [])
@@ -135,6 +136,15 @@ function App() {
     )
   }
 
+  const handleSignIn = async () => {
+    try {
+      setAuthError(null)
+      await signInWithGoogle()
+    } catch (err) {
+      setAuthError(err.message)
+    }
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-6 px-4">
@@ -143,8 +153,13 @@ function App() {
           <h1 className="text-2xl font-bold text-white mb-2">FIRE Dashboard</h1>
           <p className="text-gray-400 text-sm">Financial Independence, Retire Early</p>
         </div>
+        {authError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400">
+            {authError}
+          </div>
+        )}
         <button
-          onClick={signInWithGoogle}
+          onClick={handleSignIn}
           className="flex items-center gap-3 bg-white text-gray-800 font-medium px-6 py-3 rounded-lg hover:bg-gray-100 transition-colors"
         >
           <svg width="18" height="18" viewBox="0 0 18 18">
