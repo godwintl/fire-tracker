@@ -1,9 +1,14 @@
-const API_KEY = 'AIzaSyCGeE3Z_26dOTcc97EXVhuLXIIc2_k69cg'
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`
+function getApiUrl(apiKey) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+}
 
-async function geminiRequest(body, retries = 3) {
+async function geminiRequest(apiKey, body, retries = 3) {
+  if (!apiKey) throw new Error('No API key configured. Add your Gemini API key in Settings.')
+
+  const url = getApiUrl(apiKey)
+
   for (let attempt = 0; attempt < retries; attempt++) {
-    const response = await fetch(API_URL, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -34,8 +39,8 @@ async function geminiRequest(body, retries = 3) {
   throw new Error('Rate limited — please wait a moment and try again.')
 }
 
-export async function parseTextUpdate(text, currentAccounts) {
-  return geminiRequest({
+export async function parseTextUpdate(apiKey, text, currentAccounts) {
+  return geminiRequest(apiKey, {
     contents: [{
       parts: [{
         text: `You are a financial data parser for a Singapore-based FIRE tracker. The user typed a natural language update about their finances. Parse it into a JSON update.
@@ -74,8 +79,8 @@ If you cannot understand the input, return: {}`
   })
 }
 
-export async function extractFinancials(base64Image, mimeType) {
-  return geminiRequest({
+export async function extractFinancials(apiKey, base64Image, mimeType) {
+  return geminiRequest(apiKey, {
     contents: [{
       parts: [
         {

@@ -45,3 +45,13 @@ export function subscribeToInputs(uid, callback) {
     if (data) callback(data)
   })
 }
+
+export function saveApiKey(uid, key) {
+  return set(ref(db, `users/${uid}/settings/geminiApiKey`), key)
+}
+
+export function subscribeToApiKey(uid, callback) {
+  return onValue(ref(db, `users/${uid}/settings/geminiApiKey`), (snapshot) => {
+    callback(snapshot.val() || '')
+  })
+}

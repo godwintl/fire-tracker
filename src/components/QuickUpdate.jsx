@@ -9,7 +9,7 @@ const EXAMPLES = [
   'mortgage down to 350k',
 ]
 
-export default function QuickUpdate({ accounts, onApply }) {
+export default function QuickUpdate({ accounts, onApply, apiKey }) {
   const [text, setText] = useState('')
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
@@ -24,7 +24,7 @@ export default function QuickUpdate({ accounts, onApply }) {
     setStatus('processing')
 
     try {
-      const parsed = await parseTextUpdate(text.trim(), accounts)
+      const parsed = await parseTextUpdate(apiKey, text.trim(), accounts)
 
       if (Object.keys(parsed).length === 0) {
         setError("Couldn't understand that. Try something like \"IBKR is now 85k\".")
