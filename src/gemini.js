@@ -6,6 +6,7 @@ async function geminiRequest(apiKey, body, retries = 3) {
   if (!apiKey) throw new Error('No API key configured. Add your Gemini API key in Settings.')
 
   const url = getApiUrl(apiKey)
+  let lastError = null
 
   for (let attempt = 0; attempt < retries; attempt++) {
     const response = await fetch(url, {
@@ -14,17 +15,16 @@ async function geminiRequest(apiKey, body, retries = 3) {
       body: JSON.stringify(body),
     })
 
-    if (response.status === 429 && attempt < retries - 1) {
-      await new Promise(r => setTimeout(r, (attempt + 1) * 2000))
-      continue
-    }
-
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limited — please wait a moment and try again.')
-      }
       const errBody = await response.json().catch(() => ({}))
       const msg = errBody?.error?.message || `status ${response.status}`
+
+      if (response.status === 429 && attempt < retries - 1) {
+        lastError = msg
+        await new Promise(r => setTimeout(r, (attempt + 1) * 2000))
+        continue
+      }
+
       throw new Error(`Gemini error: ${msg}`)
     }
 
@@ -39,7 +39,7 @@ async function geminiRequest(apiKey, body, retries = 3) {
       return {}
     }
   }
-  throw new Error('Rate limited — please wait a moment and try again.')
+  throw new Error(`Gemini error: ${lastError || 'Rate limited after retries'}`)
 }
 
 export async function parseTextUpdate(apiKey, text, currentAccounts) {
