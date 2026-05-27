@@ -20,9 +20,12 @@ async function geminiRequest(apiKey, body, retries = 3) {
     }
 
     if (!response.ok) {
-      throw new Error(response.status === 429
-        ? 'Rate limited — please wait a moment and try again.'
-        : `Gemini API error: ${response.status}`)
+      if (response.status === 429) {
+        throw new Error('Rate limited — please wait a moment and try again.')
+      }
+      const errBody = await response.json().catch(() => ({}))
+      const msg = errBody?.error?.message || `status ${response.status}`
+      throw new Error(`Gemini error: ${msg}`)
     }
 
     const data = await response.json()
