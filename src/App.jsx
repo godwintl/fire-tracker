@@ -220,7 +220,7 @@ function App() {
                   className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-orange-500"
                 />
                 <button
-                  onClick={() => saveApiKey(user.uid, geminiKey)}
+                  onClick={() => { saveApiKey(user.uid, geminiKey); setShowSettings(false) }}
                   className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
                 >
                   Save
