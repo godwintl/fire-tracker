@@ -6,6 +6,7 @@ import MetricCard from './components/MetricCard'
 import ProgressRing from './components/ProgressRing'
 import ProjectionChart from './components/ProjectionChart'
 import MilestoneTimeline from './components/MilestoneTimeline'
+import ScreenshotUpload from './components/ScreenshotUpload'
 
 const DEFAULT_INPUTS = {
   currentAge: 28,
@@ -47,6 +48,14 @@ function App() {
       return
     }
   }, [inputs])
+
+  const applyExtracted = useCallback((extracted) => {
+    setInputs(prev => {
+      const next = { ...prev, ...extracted }
+      if (user?.uid) saveInputs(user.uid, next)
+      return next
+    })
+  }, [user?.uid])
 
   const results = useMemo(() => calculateFIRE(inputs), [inputs])
 
@@ -153,6 +162,11 @@ function App() {
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Your Numbers</h2>
           <InputPanel inputs={inputs} onChange={updateField} />
+        </section>
+
+        <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-400 mb-4">Import from Screenshot</h2>
+          <ScreenshotUpload onApply={applyExtracted} />
         </section>
       </main>
 

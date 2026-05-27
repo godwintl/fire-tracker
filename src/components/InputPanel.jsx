@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const FIELDS = [
   { key: 'currentAge', label: 'Current Age', min: 18, max: 80, step: 1, prefix: '', suffix: ' yrs' },
   { key: 'currentSavings', label: 'Current Savings', min: 0, max: 5000000, step: 1000, prefix: '$', suffix: '' },
@@ -9,10 +11,58 @@ const FIELDS = [
   { key: 'targetAge', label: 'Target Retirement Age', min: 30, max: 80, step: 1, prefix: '', suffix: ' yrs' },
 ]
 
+export { FIELDS }
+
 function formatDisplay(value, field) {
   if (field.prefix === '$') return `$${Number(value).toLocaleString('en-US')}`
   if (field.suffix === '%') return `${value}%`
   return `${value}${field.suffix}`
+}
+
+function EditableValue({ value, field, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const startEdit = () => {
+    setDraft(String(value))
+    setEditing(true)
+  }
+
+  const commit = () => {
+    const num = parseFloat(draft)
+    if (!isNaN(num)) {
+      const clamped = Math.min(Math.max(num, field.min), field.max)
+      onChange(field.key, clamped)
+    }
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <input
+        type="number"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
+        autoFocus
+        className="w-24 text-right text-sm font-mono text-white bg-gray-700 border border-orange-500 rounded px-2 py-0.5 outline-none"
+        min={field.min}
+        max={field.max}
+        step={field.step}
+      />
+    )
+  }
+
+  return (
+    <button
+      onClick={startEdit}
+      className="text-sm font-mono text-white hover:text-orange-400 transition-colors cursor-text border-b border-dashed border-gray-600 hover:border-orange-400"
+      title="Click to edit"
+    >
+      {formatDisplay(value, field)}
+    </button>
+  )
 }
 
 export default function InputPanel({ inputs, onChange }) {
@@ -24,9 +74,7 @@ export default function InputPanel({ inputs, onChange }) {
             <label className="text-sm text-gray-300" htmlFor={field.key}>
               {field.label}
             </label>
-            <span className="text-sm font-mono text-white">
-              {formatDisplay(inputs[field.key], field)}
-            </span>
+            <EditableValue value={inputs[field.key]} field={field} onChange={onChange} />
           </div>
           <input
             id={field.key}
