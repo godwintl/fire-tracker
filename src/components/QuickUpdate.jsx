@@ -7,41 +7,30 @@ const EXAMPLES = [
   'DBS savings now 30k',
   'salary is 120k per year',
   'mortgage down to 350k',
+  'added 5k to IBKR',
 ]
 
-export default function QuickUpdate({ accounts, onApply, apiKey }) {
+export default function QuickUpdate({ accounts, onApply }) {
   const [text, setText] = useState('')
-  const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     if (!text.trim()) return
 
     setError(null)
     setResult(null)
-    setStatus('processing')
 
-    try {
-      const parsed = await parseTextUpdate(apiKey, text.trim(), accounts)
+    const parsed = parseTextUpdate(null, text.trim(), accounts)
 
-      if (Object.keys(parsed).length === 0) {
-        setError("Couldn't understand that. Try something like \"IBKR is now 85k\".")
-        setStatus('idle')
-      } else {
-        onApply(parsed)
-        setResult(text.trim())
-        setText('')
-        setStatus('applied')
-        setTimeout(() => {
-          setStatus('idle')
-          setResult(null)
-        }, 3000)
-      }
-    } catch (err) {
-      setError(`Failed: ${err.message}`)
-      setStatus('idle')
+    if (Object.keys(parsed).length === 0) {
+      setError("Couldn't understand that. Try something like \"IBKR is now 85k\".")
+    } else {
+      onApply(parsed)
+      setResult(text.trim())
+      setText('')
+      setTimeout(() => setResult(null), 3000)
     }
   }
 
@@ -53,27 +42,19 @@ export default function QuickUpdate({ accounts, onApply, apiKey }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder='e.g. "IBKR is now 95k"'
-          disabled={status === 'processing'}
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-orange-500 transition-colors disabled:opacity-50"
+          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-orange-500 transition-colors"
         />
         <button
           type="submit"
-          disabled={!text.trim() || status === 'processing'}
-          className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2 shrink-0"
+          disabled={!text.trim()}
+          className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors shrink-0"
         >
-          {status === 'processing' ? (
-            <>
-              <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span className="hidden sm:inline">Updating...</span>
-            </>
-          ) : (
-            'Update'
-          )}
+          Update
         </button>
       </form>
 
       {/* Quick examples */}
-      {status === 'idle' && !error && (
+      {!error && !result && (
         <div className="flex flex-wrap gap-1.5">
           {EXAMPLES.map((ex, i) => (
             <button
@@ -98,9 +79,9 @@ export default function QuickUpdate({ accounts, onApply, apiKey }) {
       )}
 
       {/* Success */}
-      {status === 'applied' && result && (
+      {result && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-sm text-emerald-400">
-          Updated from: "{result}"
+          Updated: "{result}"
         </div>
       )}
     </div>

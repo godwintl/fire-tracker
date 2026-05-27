@@ -273,7 +273,7 @@ function App() {
         {/* Quick Update */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Quick Update</h2>
-          <QuickUpdate accounts={inputs.accounts || DEFAULT_ACCOUNTS} onApply={applyExtracted} apiKey={geminiKey} />
+          <QuickUpdate accounts={inputs.accounts || DEFAULT_ACCOUNTS} onApply={applyExtracted} />
         </section>
 
         {/* Net Worth Breakdown */}
