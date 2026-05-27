@@ -2,21 +2,41 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { calculateFIRE } from './fire'
 import { signInWithGoogle, signOutUser, onAuthChange, saveInputs, subscribeToInputs } from './firebase'
 import InputPanel from './components/InputPanel'
+import AccountsPanel from './components/AccountsPanel'
 import MetricCard from './components/MetricCard'
 import ProgressRing from './components/ProgressRing'
 import ProjectionChart from './components/ProjectionChart'
 import MilestoneTimeline from './components/MilestoneTimeline'
 import ScreenshotUpload from './components/ScreenshotUpload'
 
+const DEFAULT_ACCOUNTS = {
+  cpfOA: 0,
+  cpfSA: 0,
+  cpfMA: 0,
+  propertyValue: 0,
+  mortgageRemaining: 0,
+  ibkr: 0,
+  banks: [{ name: 'DBS', balance: 0 }],
+}
+
 const DEFAULT_INPUTS = {
   currentAge: 28,
-  currentSavings: 50000,
   annualIncome: 100000,
   annualExpenses: 40000,
   monthlyContribution: 3000,
   expectedReturn: 7,
   withdrawalRate: 4,
   targetAge: 65,
+  accounts: DEFAULT_ACCOUNTS,
+}
+
+function computeNetWorth(accounts) {
+  if (!accounts) return 0
+  const cpf = (accounts.cpfOA || 0) + (accounts.cpfSA || 0) + (accounts.cpfMA || 0)
+  const housing = Math.max(0, (accounts.propertyValue || 0) - (accounts.mortgageRemaining || 0))
+  const ibkr = accounts.ibkr || 0
+  const banks = (accounts.banks || []).reduce((sum, b) => sum + (b.balance || 0), 0)
+  return cpf + housing + ibkr + banks
 }
 
 function App() {
@@ -30,13 +50,25 @@ function App() {
     if (!user?.uid) return
     return subscribeToInputs(user.uid, (data) => {
       isRemoteUpdate.current = true
-      setInputs(data)
+      setInputs(prev => ({
+        ...DEFAULT_INPUTS,
+        ...data,
+        accounts: { ...DEFAULT_ACCOUNTS, ...(data.accounts || {}) },
+      }))
     })
   }, [user?.uid])
 
   const updateField = useCallback((field, value) => {
     setInputs(prev => {
       const next = { ...prev, [field]: value }
+      if (user?.uid) saveInputs(user.uid, next)
+      return next
+    })
+  }, [user?.uid])
+
+  const updateAccounts = useCallback((accounts) => {
+    setInputs(prev => {
+      const next = { ...prev, accounts }
       if (user?.uid) saveInputs(user.uid, next)
       return next
     })
@@ -51,13 +83,45 @@ function App() {
 
   const applyExtracted = useCallback((extracted) => {
     setInputs(prev => {
-      const next = { ...prev, ...extracted }
+      const { accounts: extractedAccounts, ...rest } = extracted
+      let next = { ...prev, ...rest }
+
+      if (extractedAccounts) {
+        const prevAccounts = prev.accounts || DEFAULT_ACCOUNTS
+        const mergedAccounts = { ...prevAccounts }
+
+        for (const [key, val] of Object.entries(extractedAccounts)) {
+          if (key === 'banks' && Array.isArray(val)) {
+            const existing = mergedAccounts.banks || []
+            for (const newBank of val) {
+              const idx = existing.findIndex(b => b.name.toLowerCase() === newBank.name.toLowerCase())
+              if (idx >= 0) {
+                existing[idx] = { ...existing[idx], balance: newBank.balance }
+              } else {
+                existing.push(newBank)
+              }
+            }
+            mergedAccounts.banks = existing
+          } else {
+            mergedAccounts[key] = val
+          }
+        }
+        next.accounts = mergedAccounts
+      }
+
       if (user?.uid) saveInputs(user.uid, next)
       return next
     })
   }, [user?.uid])
 
-  const results = useMemo(() => calculateFIRE(inputs), [inputs])
+  const netWorth = useMemo(() => computeNetWorth(inputs.accounts), [inputs.accounts])
+
+  const fireInputs = useMemo(() => ({
+    ...inputs,
+    currentSavings: netWorth,
+  }), [inputs, netWorth])
+
+  const results = useMemo(() => calculateFIRE(fireInputs), [fireInputs])
 
   const fmt = (n) => n != null ? n.toLocaleString('en-US') : '—'
   const fmtCurrency = (n) => n != null ? `$${n.toLocaleString('en-US')}` : '—'
@@ -113,12 +177,13 @@ function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* Progress + Key Metrics */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1 bg-gray-900 rounded-2xl p-6 flex flex-col items-center justify-center border border-gray-800">
             <ProgressRing progress={results.currentProgress} />
             <p className="mt-3 text-sm text-gray-400">FIRE Progress</p>
             <p className="text-xs text-gray-500 mt-1">
-              {fmtCurrency(inputs.currentSavings)} / {fmtCurrency(results.fireNumber)}
+              {fmtCurrency(netWorth)} / {fmtCurrency(results.fireNumber)}
             </p>
           </div>
           <div className="md:col-span-2 grid grid-cols-2 gap-4">
@@ -143,27 +208,37 @@ function App() {
             <MetricCard
               label="Coast FIRE"
               value={fmtCurrency(results.coastFIRENumber)}
-              sub={inputs.currentSavings >= results.coastFIRENumber ? 'Achieved!' : 'Amount needed today'}
-              color={inputs.currentSavings >= results.coastFIRENumber ? 'text-emerald-400' : 'text-sky-400'}
+              sub={netWorth >= results.coastFIRENumber ? 'Achieved!' : 'Amount needed today'}
+              color={netWorth >= results.coastFIRENumber ? 'text-emerald-400' : 'text-sky-400'}
             />
           </div>
         </section>
 
+        {/* Net Worth Breakdown */}
+        <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-400 mb-4">Net Worth Breakdown</h2>
+          <AccountsPanel accounts={inputs.accounts || DEFAULT_ACCOUNTS} onChange={updateAccounts} />
+        </section>
+
+        {/* Projection Chart */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Net Worth Projection</h2>
           <ProjectionChart projections={results.projections} fireNumber={results.fireNumber} fireAge={results.fireAge} />
         </section>
 
+        {/* Milestones */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Milestones</h2>
           <MilestoneTimeline projections={results.projections} fireNumber={results.fireNumber} currentAge={inputs.currentAge} />
         </section>
 
+        {/* FIRE Parameters */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
-          <h2 className="text-sm font-semibold text-gray-400 mb-4">Your Numbers</h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-4">FIRE Parameters</h2>
           <InputPanel inputs={inputs} onChange={updateField} />
         </section>
 
+        {/* Screenshot Import */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Import from Screenshot</h2>
           <ScreenshotUpload onApply={applyExtracted} />

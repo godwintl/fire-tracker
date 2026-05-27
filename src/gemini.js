@@ -9,18 +9,32 @@ export async function extractFinancials(base64Image, mimeType) {
       contents: [{
         parts: [
           {
-            text: `Analyze this financial screenshot and extract any relevant numbers. Map them to these fields if you can identify them:
+            text: `Analyze this financial screenshot and extract any relevant numbers. This is for a Singapore-based FIRE tracker. Map values to these fields:
 
+FIRE parameters:
 - currentAge: person's current age (number)
-- currentSavings: total savings/portfolio/net worth value (number, no $ sign)
-- annualIncome: annual income/salary (number, no $ sign)
-- annualExpenses: annual expenses/spending (number, no $ sign)
-- monthlyContribution: monthly savings/investment contribution (number, no $ sign)
-- expectedReturn: expected annual return percentage (number, just the number)
-- withdrawalRate: safe withdrawal rate percentage (number, just the number)
+- annualIncome: annual income/salary (number)
+- annualExpenses: annual expenses/spending (number)
+- monthlyContribution: monthly savings/investment contribution (number)
+- expectedReturn: expected annual return percentage (number)
+- withdrawalRate: safe withdrawal rate percentage (number)
 - targetAge: target retirement age (number)
 
-Return ONLY a JSON object with the fields you can identify. Only include fields you're confident about. Example: {"currentSavings": 150000, "monthlyContribution": 3000}
+Account balances (nested under "accounts"):
+- cpfOA: CPF Ordinary Account balance (number)
+- cpfSA: CPF Special Account balance (number)
+- cpfMA: CPF Medisave Account balance (number)
+- propertyValue: property/home market value (number)
+- mortgageRemaining: outstanding mortgage/home loan (number)
+- ibkr: Interactive Brokers / investment portfolio value (number)
+- banks: array of {name: string, balance: number} for bank accounts
+
+Return ONLY a JSON object with fields you can confidently identify. All numbers should be plain numbers without $ signs or commas.
+
+Example for a CPF screenshot: {"accounts": {"cpfOA": 45000, "cpfSA": 32000, "cpfMA": 18000}}
+Example for a brokerage screenshot: {"accounts": {"ibkr": 85000}}
+Example for a bank screenshot: {"accounts": {"banks": [{"name": "DBS", "balance": 25000}]}}
+Example for income info: {"annualIncome": 96000, "monthlyContribution": 3500}
 
 If you cannot identify any relevant financial data, return an empty object: {}`
           },

@@ -2,7 +2,6 @@ import { useState } from 'react'
 
 const FIELDS = [
   { key: 'currentAge', label: 'Current Age', min: 18, max: 80, step: 1, prefix: '', suffix: ' yrs' },
-  { key: 'currentSavings', label: 'Current Savings', min: 0, max: 5000000, step: 1000, prefix: '$', suffix: '' },
   { key: 'annualIncome', label: 'Annual Income', min: 0, max: 1000000, step: 1000, prefix: '$', suffix: '' },
   { key: 'annualExpenses', label: 'Annual Expenses', min: 0, max: 500000, step: 1000, prefix: '$', suffix: '' },
   { key: 'monthlyContribution', label: 'Monthly Contribution', min: 0, max: 50000, step: 100, prefix: '$', suffix: '' },
