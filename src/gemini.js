@@ -1,5 +1,5 @@
 const API_KEY = 'AIzaSyCGeE3Z_26dOTcc97EXVhuLXIIc2_k69cg'
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${API_KEY}`
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`
 
 async function geminiRequest(body, retries = 3) {
   for (let attempt = 0; attempt < retries; attempt++) {
