@@ -1,14 +1,44 @@
 const API_KEY = 'AIzaSyCGeE3Z_26dOTcc97EXVhuLXIIc2_k69cg'
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`
 
+async function geminiRequest(body, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (response.status === 429 && attempt < retries - 1) {
+      await new Promise(r => setTimeout(r, (attempt + 1) * 2000))
+      continue
+    }
+
+    if (!response.ok) {
+      throw new Error(response.status === 429
+        ? 'Rate limited — please wait a moment and try again.'
+        : `Gemini API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return {}
+
+    try {
+      return JSON.parse(jsonMatch[0])
+    } catch {
+      return {}
+    }
+  }
+  throw new Error('Rate limited — please wait a moment and try again.')
+}
+
 export async function parseTextUpdate(text, currentAccounts) {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: `You are a financial data parser for a Singapore-based FIRE tracker. The user typed a natural language update about their finances. Parse it into a JSON update.
+  return geminiRequest({
+    contents: [{
+      parts: [{
+        text: `You are a financial data parser for a Singapore-based FIRE tracker. The user typed a natural language update about their finances. Parse it into a JSON update.
 
 Current account balances:
 - CPF OA: ${currentAccounts.cpfOA || 0}
@@ -38,35 +68,18 @@ Examples:
 "mortgage down to 350k" → {"accounts": {"mortgageRemaining": 350000}}
 
 If you cannot understand the input, return: {}`
-        }]
-      }],
-      generationConfig: { temperature: 0.1 }
-    })
+      }]
+    }],
+    generationConfig: { temperature: 0.1 }
   })
-
-  if (!response.ok) throw new Error(`Gemini API error: ${response.status}`)
-
-  const data = await response.json()
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return {}
-
-  try {
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return {}
-  }
 }
 
 export async function extractFinancials(base64Image, mimeType) {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          {
-            text: `Analyze this financial screenshot and extract any relevant numbers. This is for a Singapore-based FIRE tracker. Map values to these fields:
+  return geminiRequest({
+    contents: [{
+      parts: [
+        {
+          text: `Analyze this financial screenshot and extract any relevant numbers. This is for a Singapore-based FIRE tracker. Map values to these fields:
 
 FIRE parameters:
 - currentAge: person's current age (number)
@@ -94,34 +107,15 @@ Example for a bank screenshot: {"accounts": {"banks": [{"name": "DBS", "balance"
 Example for income info: {"annualIncome": 96000, "monthlyContribution": 3500}
 
 If you cannot identify any relevant financial data, return an empty object: {}`
-          },
-          {
-            inlineData: {
-              mimeType,
-              data: base64Image,
-            }
+        },
+        {
+          inlineData: {
+            mimeType,
+            data: base64Image,
           }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.1,
-      }
-    })
+        }
+      ]
+    }],
+    generationConfig: { temperature: 0.1 }
   })
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) return {}
-
-  try {
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return {}
-  }
 }
