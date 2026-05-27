@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-950: #022c22;
+  --color-fire-orange: #f97316;
+  --color-fire-red: #ef4444;
+  --color-fire-amber: #f59e0b;
+}
