@@ -8,6 +8,7 @@ import ProgressRing from './components/ProgressRing'
 import ProjectionChart from './components/ProjectionChart'
 import MilestoneTimeline from './components/MilestoneTimeline'
 import ScreenshotUpload from './components/ScreenshotUpload'
+import QuickUpdate from './components/QuickUpdate'
 
 const DEFAULT_ACCOUNTS = {
   cpfOA: 0,
@@ -212,6 +213,12 @@ function App() {
               color={netWorth >= results.coastFIRENumber ? 'text-emerald-400' : 'text-sky-400'}
             />
           </div>
+        </section>
+
+        {/* Quick Update */}
+        <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-400 mb-4">Quick Update</h2>
+          <QuickUpdate accounts={inputs.accounts || DEFAULT_ACCOUNTS} onApply={applyExtracted} />
         </section>
 
         {/* Net Worth Breakdown */}
