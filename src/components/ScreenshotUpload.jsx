@@ -49,7 +49,7 @@ function fmtValue(val, label) {
   return `$${val.toLocaleString('en-US')}`
 }
 
-export default function ScreenshotUpload({ onApply, apiKey }) {
+export default function ScreenshotUpload({ onApply }) {
   const [status, setStatus] = useState('idle')
   const [preview, setPreview] = useState(null)
   const [extracted, setExtracted] = useState(null)
@@ -70,7 +70,7 @@ export default function ScreenshotUpload({ onApply, apiKey }) {
 
       try {
         const base64 = dataUrl.split(',')[1]
-        const result = await extractFinancials(apiKey, base64, file.type)
+        const result = await extractFinancials(base64, file.type)
 
         if (Object.keys(result).length === 0) {
           setError('No financial data found in this screenshot.')

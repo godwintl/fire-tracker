@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { calculateFIRE } from './fire'
-import { signInWithGoogle, signOutUser, onAuthChange, saveInputs, subscribeToInputs, saveApiKey, subscribeToApiKey } from './firebase'
+import { signInWithGoogle, signOutUser, onAuthChange, saveInputs, subscribeToInputs } from './firebase'
 import InputPanel from './components/InputPanel'
 import AccountsPanel from './components/AccountsPanel'
 import MetricCard from './components/MetricCard'
@@ -44,8 +44,6 @@ function App() {
   const [user, setUser] = useState(undefined)
   const [inputs, setInputs] = useState(DEFAULT_INPUTS)
   const [authError, setAuthError] = useState(null)
-  const [geminiKey, setGeminiKey] = useState('')
-  const [showSettings, setShowSettings] = useState(false)
   const isRemoteUpdate = useRef(false)
 
   useEffect(() => onAuthChange(setUser), [])
@@ -60,11 +58,6 @@ function App() {
         accounts: { ...DEFAULT_ACCOUNTS, ...(data.accounts || {}) },
       }))
     })
-  }, [user?.uid])
-
-  useEffect(() => {
-    if (!user?.uid) return
-    return subscribeToApiKey(user.uid, setGeminiKey)
   }, [user?.uid])
 
   const updateField = useCallback((field, value) => {
@@ -190,12 +183,6 @@ function App() {
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-gray-500 hidden sm:inline">{user.email}</span>
             <button
-              onClick={() => setShowSettings(s => !s)}
-              className="text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              {showSettings ? 'Close' : 'Settings'}
-            </button>
-            <button
               onClick={signOutUser}
               className="text-xs text-gray-400 hover:text-white transition-colors"
             >
@@ -204,33 +191,6 @@ function App() {
           </div>
         </div>
       </header>
-
-      {showSettings && (
-        <div className="max-w-5xl mx-auto px-4 pt-4">
-          <div className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-400">Settings</h2>
-            <div>
-              <label className="text-sm text-gray-300 block mb-1">Gemini API Key</label>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={geminiKey}
-                  onChange={(e) => setGeminiKey(e.target.value)}
-                  placeholder="AIza..."
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-orange-500"
-                />
-                <button
-                  onClick={() => { saveApiKey(user.uid, geminiKey); setShowSettings(false) }}
-                  className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
-                >
-                  Save
-                </button>
-              </div>
-              <p className="text-xs text-gray-600 mt-1">Get a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" className="text-orange-400 hover:underline">Google AI Studio</a>. Stored securely in your Firebase database.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Progress + Key Metrics */}
@@ -303,7 +263,7 @@ function App() {
         {/* Screenshot Import */}
         <section className="bg-gray-900 rounded-2xl p-4 md:p-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-400 mb-4">Import from Screenshot</h2>
-          <ScreenshotUpload onApply={applyExtracted} apiKey={geminiKey} />
+          <ScreenshotUpload onApply={applyExtracted} />
         </section>
       </main>
 
