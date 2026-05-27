@@ -1,8 +1,7 @@
-import { app } from './firebase'
-import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const ai = getAI(app, { backend: new GoogleAIBackend() })
-const model = getGenerativeModel(ai, { model: 'gemini-2.0-flash' })
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 export async function parseTextUpdate(text, currentAccounts) {
   const prompt = `You are a financial data parser for a Singapore-based FIRE tracker. The user typed a natural language update about their finances. Parse it into a JSON update.
